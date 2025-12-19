@@ -1,6 +1,7 @@
 import 'package:ainme_vault/services/anilist_service.dart';
 import 'package:ainme_vault/theme/app_theme.dart';
 import 'package:ainme_vault/screens/anime_detail_screen.dart';
+import 'package:ainme_vault/widgets/error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -28,6 +29,12 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
   Map<String, dynamic>? character;
   bool isDescriptionExpanded = false;
 
+  // Error handling states
+  bool hasError = false;
+  String? errorMessage;
+  bool _isFetching =
+      false; // Separate flag for preventing multiple simultaneous fetches
+
   @override
   void initState() {
     super.initState();
@@ -35,12 +42,53 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
   }
 
   Future<void> _fetchDetails() async {
-    final data = await AniListService.getCharacterDetails(widget.characterId);
-    if (mounted) {
+    // Prevent multiple simultaneous fetches
+    if (_isFetching) return;
+    _isFetching = true;
+
+    if (!mounted) {
+      _isFetching = false;
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      hasError = false;
+      errorMessage = null;
+    });
+
+    try {
+      final data = await AniListService.getCharacterDetails(widget.characterId);
+      if (!mounted) {
+        _isFetching = false;
+        return;
+      }
+
+      if (data != null) {
+        setState(() {
+          character = data;
+          isLoading = false;
+          hasError = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          hasError = true;
+          errorMessage = "Failed to load character details";
+        });
+      }
+    } catch (e) {
+      if (!mounted) {
+        _isFetching = false;
+        return;
+      }
       setState(() {
-        character = data;
         isLoading = false;
+        hasError = true;
+        errorMessage = "Network error. Please try again.";
       });
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -128,242 +176,266 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
             ),
           ),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (nativeName != null) ...[
-                    Center(
-                      child: Text(
-                        nativeName,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
+            child: hasError
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 40),
+                    child: ErrorCard(
+                      title: "Failed to Load Character",
+                      message: errorMessage,
+                      onRetry: _fetchDetails,
                     ),
-                    const SizedBox(height: 25),
-                  ],
-
-                  // Info Grid
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
+                  )
+                : isLoading
+                ? const SizedBox.shrink() // Show nothing while loading, header image is already visible
+                : Padding(
+                    padding: const EdgeInsets.all(20),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildInfoItem(
-                              "Age",
-                              age,
-                              Icons.cake_rounded,
-                              Colors.pinkAccent,
-                            ),
-                            _buildInfoItem(
-                              "Gender",
-                              gender,
-                              Icons.person_rounded,
-                              Colors.blueAccent,
-                            ),
-                            _buildInfoItem(
-                              "Blood",
-                              bloodType,
-                              Icons.bloodtype_rounded,
-                              Colors.redAccent,
-                            ),
-                          ],
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          child: Divider(indent: 20, endIndent: 20),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildInfoItem(
-                              "Birthday",
-                              birthday,
-                              Icons.calendar_today_rounded,
-                              Colors.orangeAccent,
-                            ),
-                            _buildInfoItem(
-                              "Favourites",
-                              favourites,
-                              Icons.favorite_rounded,
-                              Colors.red,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // Description
-                  const Text(
-                    "About",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  AnimatedCrossFade(
-                    firstChild: Text(
-                      description,
-                      maxLines: 6,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade700,
-                        height: 1.6,
-                      ),
-                    ),
-                    secondChild: Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade700,
-                        height: 1.6,
-                      ),
-                    ),
-                    crossFadeState: isDescriptionExpanded
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 300),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isDescriptionExpanded = !isDescriptionExpanded;
-                      });
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isDescriptionExpanded ? "Read Less" : "Read More",
-                            style: TextStyle(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                        if (nativeName != null) ...[
+                          Center(
+                            child: Text(
+                              nativeName,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade800,
+                                letterSpacing: 1.0,
+                              ),
                             ),
                           ),
-                          Icon(
-                            isDescriptionExpanded
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            color: AppTheme.primary,
-                          ),
+                          const SizedBox(height: 25),
                         ],
-                      ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 30),
+                        // Info Grid
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildInfoItem(
+                                    "Age",
+                                    age,
+                                    Icons.cake_rounded,
+                                    Colors.pinkAccent,
+                                  ),
+                                  _buildInfoItem(
+                                    "Gender",
+                                    gender,
+                                    Icons.person_rounded,
+                                    Colors.blueAccent,
+                                  ),
+                                  _buildInfoItem(
+                                    "Blood",
+                                    bloodType,
+                                    Icons.bloodtype_rounded,
+                                    Colors.redAccent,
+                                  ),
+                                ],
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 15),
+                                child: Divider(indent: 20, endIndent: 20),
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildInfoItem(
+                                    "Birthday",
+                                    birthday,
+                                    Icons.calendar_today_rounded,
+                                    Colors.orangeAccent,
+                                  ),
+                                  _buildInfoItem(
+                                    "Favourites",
+                                    favourites,
+                                    Icons.favorite_rounded,
+                                    Colors.red,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
 
-                  // Appearances
-                  if (character?['media']?['nodes'] != null &&
-                      (character!['media']['nodes'] as List).isNotEmpty) ...[
-                    const Text(
-                      "Appearances",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    SizedBox(
-                      height: 200,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        cacheExtent: 300,
-                        addRepaintBoundaries: true,
-                        itemCount:
-                            (character!['media']['nodes'] as List).length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(width: 15),
-                        itemBuilder: (context, index) {
-                          final anime = character!['media']['nodes'][index];
-                          final title = anime['title']?['romaji'] ?? "Unknown";
-                          final image = anime['coverImage']?['medium'];
+                        const SizedBox(height: 30),
 
-                          return RepaintBoundary(
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        AnimeDetailScreen(anime: anime),
+                        // Description
+                        const Text(
+                          "About",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        AnimatedCrossFade(
+                          firstChild: Text(
+                            description,
+                            maxLines: 6,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade700,
+                              height: 1.6,
+                            ),
+                          ),
+                          secondChild: Text(
+                            description,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade700,
+                              height: 1.6,
+                            ),
+                          ),
+                          crossFadeState: isDescriptionExpanded
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
+                          duration: const Duration(milliseconds: 300),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              isDescriptionExpanded = !isDescriptionExpanded;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 10.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isDescriptionExpanded
+                                      ? "Read Less"
+                                      : "Read More",
+                                  style: TextStyle(
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                Icon(
+                                  isDescriptionExpanded
+                                      ? Icons.keyboard_arrow_up
+                                      : Icons.keyboard_arrow_down,
+                                  color: AppTheme.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // Appearances
+                        if (character?['media']?['nodes'] != null &&
+                            (character!['media']['nodes'] as List)
+                                .isNotEmpty) ...[
+                          const Text(
+                            "Appearances",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          SizedBox(
+                            height: 200,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              cacheExtent: 300,
+                              addRepaintBoundaries: true,
+                              itemCount:
+                                  (character!['media']['nodes'] as List).length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(width: 15),
+                              itemBuilder: (context, index) {
+                                final anime =
+                                    character!['media']['nodes'][index];
+                                final title =
+                                    anime['title']?['romaji'] ?? "Unknown";
+                                final image = anime['coverImage']?['medium'];
+
+                                return RepaintBoundary(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              AnimeDetailScreen(anime: anime),
+                                        ),
+                                      );
+                                    },
+                                    child: SizedBox(
+                                      width: 120,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          image != null
+                                              ? FadeInImageWidget(
+                                                  imageUrl: image,
+                                                  width: 120,
+                                                  height: 160,
+                                                )
+                                              : Container(
+                                                  width: 120,
+                                                  height: 160,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[300],
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.image,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 );
                               },
-                              child: SizedBox(
-                                width: 120,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    image != null
-                                        ? FadeInImageWidget(
-                                            imageUrl: image,
-                                            width: 120,
-                                            height: 160,
-                                          )
-                                        : Container(
-                                            width: 120,
-                                            height: 160,
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[300],
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: const Icon(
-                                              Icons.image,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ],
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
+                  ),
           ),
         ],
       ),

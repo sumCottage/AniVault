@@ -6,6 +6,7 @@ import 'anime_detail_screen.dart';
 import 'dart:async';
 import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ainme_vault/widgets/error_widgets.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -28,6 +29,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Timer? _debounce;
 
   String selectedFilter = "Top 100";
+
+  // Error handling states
+  bool hasError = false;
+  String? errorMessage;
 
   List<String> searchHistory = [];
 
@@ -119,25 +124,51 @@ class _SearchScreenState extends State<SearchScreen> {
     await prefs.remove('search_history');
   }
 
+  // Helper to get API call for a filter (used for retry)
+  Future<List> Function() _getApiCallForFilter(String filterName) {
+    switch (filterName) {
+      case "Top 100":
+        return AniListService.getTopAnime;
+      case "Popular":
+        return AniListService.getPopularAnime;
+      case "Upcoming":
+        return AniListService.getUpcomingAnime;
+      case "Airing":
+        return AniListService.getAiringAnime;
+      case "Movies":
+        return AniListService.getTopMovies;
+      case "Search":
+        return () => AniListService.searchAnime(_controller.text.trim());
+      default:
+        return () => AniListService.getAnimeByGenre(filterName);
+    }
+  }
+
   Future<void> _fetchAnimeByCategory(
     String filterName,
     Future<List> Function() apiCall,
   ) async {
+    // Prevent multiple simultaneous fetches
+    if (isLoading) return;
+
     // Prevent unnecessary reloads
     if (selectedFilter == filterName &&
-        !isLoading &&
         animeList.isNotEmpty &&
+        !hasError &&
         filterName != "Search") {
       return;
     }
 
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
+      hasError = false;
+      errorMessage = null;
 
-      // Only clear search bar on filter change
       if (filterName != "Search") {
         _controller.clear();
-        FocusManager.instance.primaryFocus?.unfocus(); // Robust unfocus
+        FocusManager.instance.primaryFocus?.unfocus();
         _searchFocus.unfocus();
         isFocused = false;
       }
@@ -148,13 +179,39 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       final data = await apiCall();
       if (!mounted) return;
-      setState(() {
-        animeList = data;
-        isLoading = false;
-      });
+
+      if (data.isEmpty && filterName == "Search") {
+        setState(() {
+          animeList = data;
+          isLoading = false;
+          hasError = false;
+        });
+      } else if (data.isEmpty) {
+        setState(() {
+          isLoading = false;
+          hasError = true;
+          errorMessage = "No results found";
+        });
+      } else {
+        setState(() {
+          animeList = data;
+          isLoading = false;
+          hasError = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        hasError = true;
+        errorMessage = "Failed to load. Please try again.";
+      });
+
+      showErrorSnackBar(
+        context,
+        message: "Failed to load anime list",
+        onRetry: () => _fetchAnimeByCategory(filterName, apiCall),
+      );
     }
   }
 
@@ -498,6 +555,21 @@ class _SearchScreenState extends State<SearchScreen> {
                     ? const _CalendarView()
                     : isLoading
                     ? const AnimeListShimmer()
+                    : hasError
+                    ? ErrorCard(
+                        title: "Failed to Load",
+                        message: errorMessage,
+                        onRetry: () => _fetchAnimeByCategory(
+                          selectedFilter,
+                          _getApiCallForFilter(selectedFilter),
+                        ),
+                      )
+                    : animeList.isEmpty
+                    ? const EmptyStateWidget(
+                        title: "No Results Found",
+                        message: "Try a different search or filter",
+                        icon: Icons.search_off_rounded,
+                      )
                     : ListView.builder(
                         controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
@@ -1030,7 +1102,14 @@ class _CalendarViewState extends State<_CalendarView> {
                   snapshot.connectionState == ConnectionState.waiting;
 
               if (snapshot.hasError) {
-                return Center(child: Text("Error: ${snapshot.error}"));
+                return Center(
+                  child: InlineError(
+                    message: "Failed to load schedule",
+                    onRetry: () => setState(() {
+                      _scheduleCache.remove(_selectedDayIndex);
+                    }),
+                  ),
+                );
               }
 
               final schedules = snapshot.data ?? [];

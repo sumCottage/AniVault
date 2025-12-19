@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:ainme_vault/services/anilist_service.dart';
 import 'package:ainme_vault/screens/character_detail_screen.dart';
 import 'package:ainme_vault/theme/app_theme.dart';
+import 'package:ainme_vault/widgets/error_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,6 +31,10 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
   late Animation<double> _bannerAnimation;
   late AnimationController _dotAnimationController;
   Timer? _countdownTimer;
+
+  // Error handling states
+  bool hasError = false;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -66,30 +71,72 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
     _scrollController.addListener(_handleScroll);
   }
 
+  bool _isFetching = false; // Guard against multiple simultaneous retries
+
   Future<void> _fetchAnimeDetails() async {
+    // Prevent multiple simultaneous fetches
+    if (_isFetching) return;
+    _isFetching = true;
+
     final id = widget.anime['id'];
     if (id == null) {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() {
+          hasError = true;
+          errorMessage = "Invalid anime ID";
+        });
+      }
+      _isFetching = false;
       return;
     }
 
-    final details = await AniListService.getAnimeDetails(id);
+    // Don't set isLoading = true here, as we already have initial data
+    // We're just fetching additional details in the background
     if (mounted) {
       setState(() {
-        if (details != null) {
-          // Merge details into existing anime map
-          widget.anime.addAll(details);
+        hasError = false;
+        errorMessage = null;
+      });
+    }
 
-          // Start countdown timer if anime is airing
+    try {
+      final details = await AniListService.getAnimeDetails(id);
+      if (!mounted) {
+        _isFetching = false;
+        return;
+      }
+
+      if (details != null) {
+        setState(() {
+          widget.anime.addAll(details);
+          hasError = false;
+
           if (details['nextAiringEpisode'] != null) {
             _countdownTimer?.cancel();
-            _countdownTimer = Timer.periodic(
-              const Duration(seconds: 60),
-              (_) => setState(() {}),
-            );
+            _countdownTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+              if (mounted) setState(() {});
+            });
           }
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            hasError = true;
+            errorMessage = "Failed to load anime details";
+          });
         }
+      }
+    } catch (e) {
+      if (!mounted) {
+        _isFetching = false;
+        return;
+      }
+      setState(() {
+        hasError = true;
+        errorMessage = "Network error. Please try again.";
       });
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -1015,9 +1062,10 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                               height: double.infinity,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image),
+                            errorWidget: (context, url, error) => LightSkeleton(
+                              width: double.infinity,
+                              height: double.infinity,
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             fadeInDuration: const Duration(milliseconds: 150),
                           ),
@@ -1173,9 +1221,10 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                             height: 120,
                             borderRadius: BorderRadius.circular(60),
                           ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.person),
+                          errorWidget: (context, url, error) => LightSkeleton(
+                            width: 120,
+                            height: 120,
+                            borderRadius: BorderRadius.circular(60),
                           ),
                           fadeInDuration: const Duration(milliseconds: 150),
                         ),
@@ -1287,14 +1336,10 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                             width: 110,
                             height: 155,
                           )
-                        : Container(
+                        : LightSkeleton(
                             width: 110,
                             height: 155,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.image, color: Colors.grey),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                     const SizedBox(height: 6),
                     Text(
@@ -1523,25 +1568,40 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: Stack(
-          key: ValueKey(isLoading),
+          key: ValueKey('$isLoading$hasError'),
           children: [
-            SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  buildTopSection(context, widget.anime),
-                  buildStatsCard(widget.anime),
-                  _buildNextEpisodeWidget(widget.anime),
-                  buildGenres(widget.anime),
-                  buildDescription(widget.anime),
-                  const SizedBox(height: 10),
-                  buildTabsContainer(widget.anime),
-                  _buildStreamingSites(widget.anime),
-                  buildRecommendations(widget.anime),
-                  const SizedBox(height: 30), // Bottom padding
-                ],
+            if (hasError)
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    buildTopSection(context, widget.anime),
+                    const SizedBox(height: 40),
+                    ErrorCard(
+                      title: "Failed to Load Details",
+                      message: errorMessage,
+                      onRetry: _fetchAnimeDetails,
+                    ),
+                  ],
+                ),
+              )
+            else
+              SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    buildTopSection(context, widget.anime),
+                    buildStatsCard(widget.anime),
+                    _buildNextEpisodeWidget(widget.anime),
+                    buildGenres(widget.anime),
+                    buildDescription(widget.anime),
+                    const SizedBox(height: 10),
+                    buildTabsContainer(widget.anime),
+                    _buildStreamingSites(widget.anime),
+                    buildRecommendations(widget.anime),
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
-            ),
 
             // Back Button
             Positioned(
@@ -1628,7 +1688,6 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
   }
 }
 
-
 class FadeInImageWidget extends StatelessWidget {
   final String imageUrl;
   final double width;
@@ -1655,10 +1714,15 @@ class FadeInImageWidget extends StatelessWidget {
           height: height,
           fit: BoxFit.cover,
           memCacheWidth: (width * 3).toInt(), // Optimize decoding size
-          placeholder: (context, url) => Container(color: Colors.grey[200]),
-          errorWidget: (context, url, error) => Container(
-            color: Colors.grey[300],
-            child: const Icon(Icons.broken_image, color: Colors.grey),
+          placeholder: (context, url) => LightSkeleton(
+            width: width,
+            height: height,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          errorWidget: (context, url, error) => LightSkeleton(
+            width: width,
+            height: height,
+            borderRadius: BorderRadius.circular(12),
           ),
           fadeInDuration: const Duration(milliseconds: 250),
         ),
