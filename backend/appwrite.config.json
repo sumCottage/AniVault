@@ -1,0 +1,26 @@
+{
+    "projectId": "695bdffe000a24f8cc0a",
+    "endpoint": "https://sgp.cloud.appwrite.io/v1",
+    "functions": [
+        {
+            "$id": "695be37500355cc64c2e",
+            "execute": [
+                "any"
+            ],
+            "name": "sendPush",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-18.0",
+            "scopes": [
+                "users.read"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "src/main.js",
+            "commands": "npm install",
+            "specification": "s-0.5vcpu-512mb",
+            "path": "functions/sendPush"
+        }
+    ]
+}
