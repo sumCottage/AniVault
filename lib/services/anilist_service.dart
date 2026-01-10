@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AniListService {
   static final HttpLink httpLink = HttpLink('https://graphql.anilist.co');
+
+  // 🔥 Cached adult content preference to avoid repeated disk hits
+  static bool? _cachedShowAdult;
+
+  /// Get the cached show adult content preference
+  static Future<bool> _showAdult() async {
+    if (_cachedShowAdult != null) return _cachedShowAdult!;
+    final prefs = await SharedPreferences.getInstance();
+    _cachedShowAdult = prefs.getBool('show_adult_content') ?? false;
+    return _cachedShowAdult!;
+  }
+
+  /// Call this when the user changes the adult content setting
+  static void invalidateAdultContentCache() {
+    _cachedShowAdult = null;
+  }
 
   static GraphQLClient client() {
     return GraphQLClient(
@@ -12,10 +29,13 @@ class AniListService {
   }
 
   // ---------------- QUERY CONSTANTS ----------------
+  // Note: isAdult is optional - when not provided, returns all content
+  // When isAdult: false, only returns non-adult content (server-side filter)
+
   static const String searchQuery = r'''
-     query ($search: String, $page: Int, $perPage: Int) {
+     query ($search: String, $page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(search: $search, type: ANIME) {
+        media(search: $search, type: ANIME, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -30,15 +50,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { large medium }
+          isAdult
         }
       }
     }
   ''';
 
   static const String topAnimeQuery = r'''
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: SCORE_DESC, type: ANIME) {
+        media(sort: SCORE_DESC, type: ANIME, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -53,15 +74,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large }
+          isAdult
         }
       }
     }
   ''';
 
   static const String popularAnimeQuery = r'''
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: POPULARITY_DESC, type: ANIME) {
+        media(sort: POPULARITY_DESC, type: ANIME, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -76,15 +98,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large }
+          isAdult
         }
       }
     }
   ''';
 
   static const String upcomingAnimeQuery = r'''
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: POPULARITY_DESC, type: ANIME, status: NOT_YET_RELEASED) {
+        media(sort: POPULARITY_DESC, type: ANIME, status: NOT_YET_RELEASED, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -99,15 +122,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large }
+          isAdult
         }
       }
     }
   ''';
 
   static const String airingAnimeQuery = r'''
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: TRENDING_DESC, type: ANIME, status: RELEASING) {
+        media(sort: TRENDING_DESC, type: ANIME, status: RELEASING, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -122,15 +146,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large color }
+          isAdult
         }
       }
     }
   ''';
 
   static const String topMoviesQuery = r'''
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: SCORE_DESC, type: ANIME, format: MOVIE) {
+        media(sort: SCORE_DESC, type: ANIME, format: MOVIE, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -145,15 +170,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large }
+          isAdult
         }
       }
     }
   ''';
 
   static const String genreQuery = r'''
-    query ($genre: String, $page: Int, $perPage: Int) {
+    query ($genre: String, $page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(genre: $genre, sort: POPULARITY_DESC, type: ANIME) {
+        media(genre: $genre, sort: POPULARITY_DESC, type: ANIME, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -168,15 +194,16 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large }
+          isAdult
         }
       }
     }
   ''';
 
   static const String seasonQuery = r'''
-    query ($season: MediaSeason, $seasonYear: Int, $page: Int, $perPage: Int) {
+    query ($season: MediaSeason, $seasonYear: Int, $page: Int, $perPage: Int, $isAdult: Boolean) {
       Page(page: $page, perPage: $perPage) {
-        media(season: $season, seasonYear: $seasonYear, sort: POPULARITY_DESC, type: ANIME) {
+        media(season: $season, seasonYear: $seasonYear, sort: POPULARITY_DESC, type: ANIME, isAdult: $isAdult) {
           id
           title { romaji english }
           format
@@ -191,6 +218,7 @@ class AniListService {
           bannerImage
           startDate { year }
           coverImage { medium large }
+          isAdult
         }
       }
     }
@@ -225,6 +253,7 @@ class AniListService {
         coverImage { medium large }
         studios(isMain: true) { nodes { name } }
         trailer { id site thumbnail }
+        isAdult
         characters(sort: [ROLE, RELEVANCE], perPage: 25) {
           edges {
             role
@@ -243,6 +272,7 @@ class AniListService {
               format
               status
               coverImage { medium large }
+              isAdult
             }
           }
         }
@@ -255,6 +285,7 @@ class AniListService {
               format
               status
               coverImage { medium large }
+              isAdult
             }
           }
         }
@@ -288,6 +319,7 @@ class AniListService {
             id
             title { romaji }
             coverImage { medium }
+            isAdult
           }
         }
       }
@@ -300,9 +332,22 @@ class AniListService {
     Map<String, dynamic>? variables,
     FetchPolicy fetchPolicy = FetchPolicy.networkOnly,
   }) async {
+    // Get adult content preference
+    final showAdult = await _showAdult();
+
+    // Build final variables
+    final finalVariables = Map<String, dynamic>.from(variables ?? {});
+
+    // 🔥 Server-side optimization: when toggle is OFF, tell API to skip adult content
+    // This cuts payload size significantly for popular lists
+    if (!showAdult) {
+      finalVariables['isAdult'] = false;
+    }
+    // When toggle is ON, don't pass isAdult - API returns everything
+
     final opts = QueryOptions(
       document: gql(query),
-      variables: variables ?? {},
+      variables: finalVariables,
       fetchPolicy: fetchPolicy,
     );
 
@@ -318,7 +363,18 @@ class AniListService {
       if (page == null) return [];
       final media = page['media'];
       if (media == null) return [];
-      return List<dynamic>.from(media);
+
+      var list = List<dynamic>.from(media);
+
+      // 🔥 Client-side filtering as fallback (only needed when toggle is ON)
+      // When toggle is OFF, server already filtered, but double-check just in case
+      if (!showAdult) {
+        list = list
+            .where((item) => (item['isAdult'] as bool?) != true)
+            .toList();
+      }
+
+      return list;
     } catch (e, st) {
       debugPrint('AniList fetch failed: $e\n$st');
       return [];
@@ -339,13 +395,7 @@ class AniListService {
       final vars = <String, dynamic>{'page': p, 'perPage': perPage};
       if (otherVariables != null) vars.addAll(otherVariables);
       futures.add(
-        _fetch(
-          query,
-          variables: vars,
-          // Use cache-first if appropriate, but networkOnly ensures fresh data.
-          // Keeping networkOnly for now as per original code, but parallelizing.
-          fetchPolicy: FetchPolicy.networkOnly,
-        ),
+        _fetch(query, variables: vars, fetchPolicy: FetchPolicy.networkOnly),
       );
     }
 
@@ -353,12 +403,10 @@ class AniListService {
 
     final combined = <dynamic>[];
     for (final pageData in results) {
-      if (pageData.isEmpty) {
-        // If a page in the sequence is missing (failed), stop adding subsequent pages
-        // to maintain the correct order and ranking integrity.
-        break;
+      // Fail-soft: add whatever we got from successful pages
+      if (pageData.isNotEmpty) {
+        combined.addAll(pageData);
       }
-      combined.addAll(pageData);
     }
 
     return combined;
@@ -422,7 +470,26 @@ class AniListService {
         return null;
       }
 
-      return result.data?['Character'];
+      final character = result.data?['Character'];
+      if (character == null) return null;
+
+      // 🔥 Client-side filtering for adult content in character's media
+      final showAdult = await _showAdult();
+
+      if (!showAdult) {
+        final media = character['media'];
+        if (media != null) {
+          final nodes = media['nodes'] as List<dynamic>?;
+          if (nodes != null) {
+            final filteredNodes = nodes
+                .where((n) => (n['isAdult'] as bool?) != true)
+                .toList();
+            media['nodes'] = filteredNodes;
+          }
+        }
+      }
+
+      return character;
     } catch (e, st) {
       debugPrint('AniList fetch failed: $e\n$st');
       return null;
@@ -467,6 +534,7 @@ class AniListService {
             status
             averageScore
             episodes
+            isAdult
             nextAiringEpisode {
               airingAt
               episode
@@ -501,7 +569,20 @@ class AniListService {
       if (pageData == null) return [];
       final schedules = pageData['airingSchedules'];
       if (schedules == null) return [];
-      return List<dynamic>.from(schedules);
+
+      var list = List<dynamic>.from(schedules);
+
+      // 🔥 Client-side Adult Content Filter
+      final showAdult = await _showAdult();
+
+      if (!showAdult) {
+        list = list.where((item) {
+          final media = item['media'];
+          return media != null && (media['isAdult'] as bool?) != true;
+        }).toList();
+      }
+
+      return list;
     } catch (e, st) {
       debugPrint('AniList fetch failed: $e\n$st');
       return [];
