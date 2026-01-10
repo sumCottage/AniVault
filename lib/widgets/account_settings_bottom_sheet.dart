@@ -5,9 +5,50 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ainme_vault/theme/app_theme.dart';
+import 'package:ainme_vault/services/anilist_service.dart';
 
-class AccountSettingsBottomSheet extends StatelessWidget {
+class AccountSettingsBottomSheet extends StatefulWidget {
   const AccountSettingsBottomSheet({super.key});
+
+  @override
+  State<AccountSettingsBottomSheet> createState() =>
+      _AccountSettingsBottomSheetState();
+}
+
+class _AccountSettingsBottomSheetState
+    extends State<AccountSettingsBottomSheet> {
+  bool _showAdultContent = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _showAdultContent = prefs.getBool('show_adult_content') ?? false;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleAdultContent(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('show_adult_content', value);
+
+    // Invalidate the cache in AniListService so it picks up the new value
+    AniListService.invalidateAdultContentCache();
+
+    if (mounted) {
+      setState(() {
+        _showAdultContent = value;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,42 +123,58 @@ class AccountSettingsBottomSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionLabel("Current Email"),
-                    const SizedBox(height: 10),
-                    _infoTile(
-                      icon: Icons.email_outlined,
-                      value: user?.email ?? "No email",
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    _sectionLabel("Integrations"),
-                    const SizedBox(height: 10),
-                    _actionTile(
-                      icon: Icons.link,
-                      title: "Login with AniList",
-                      subtitle: "Sync your anime list",
-                      iconColor: const Color(0xFF02A9FF),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("AniList integration coming soon!"),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionLabel("Current Email"),
+                          const SizedBox(height: 10),
+                          _infoTile(
+                            icon: Icons.email_outlined,
+                            value: user?.email ?? "No email",
                           ),
-                        );
-                      },
-                    ),
 
-                    const SizedBox(height: 28),
+                          const SizedBox(height: 24),
 
-                    _sectionLabel("Danger Zone"),
-                    const SizedBox(height: 10),
-                    _dangerTile(context),
-                  ],
-                ),
+                          _sectionLabel("Integrations"),
+                          const SizedBox(height: 10),
+                          _actionTile(
+                            icon: Icons.link,
+                            title: "Login with AniList",
+                            subtitle: "Sync your anime list",
+                            iconColor: const Color(0xFF02A9FF),
+                            onTap: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "AniList integration coming soon!",
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          _sectionLabel("Content Settings"),
+                          const SizedBox(height: 10),
+                          _switchTile(
+                            icon: Icons.explicit,
+                            title: "Show Adult Content",
+                            subtitle: "Enable 18+ content in search results",
+                            value: _showAdultContent,
+                            onChanged: _toggleAdultContent,
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          _sectionLabel("Danger Zone"),
+                          const SizedBox(height: 10),
+                          _dangerTile(context),
+                        ],
+                      ),
               ),
             ),
 
@@ -210,6 +267,52 @@ class AccountSettingsBottomSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _switchTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _iconCircle(icon, const Color(0xFFEF4444)), // Using Red for explicit
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFFEF4444), // Match icon color
+          ),
+        ],
       ),
     );
   }
@@ -312,12 +415,12 @@ class AccountSettingsBottomSheet extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.black38, width: 1),
+                        side: const BorderSide(color: Colors.black38, width: 1),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         "Cancel",
                         style: TextStyle(color: Colors.black54),
                       ),
@@ -341,14 +444,16 @@ class AccountSettingsBottomSheet extends StatelessWidget {
                           await _deleteAccountWithUser(rootContext, user);
                         }
                       },
-
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: const Text("Delete"),
+                      child: const Text(
+                        "Delete",
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                 ],
