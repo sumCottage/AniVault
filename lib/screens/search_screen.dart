@@ -936,7 +936,7 @@ class SearchScreenState extends State<SearchScreen> {
                     : animeList.isEmpty && selectedFilter == "Search"
                     ? _buildNoResultsWidget()
                     : ListView.builder(
-                        scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
+                        cacheExtent: 500.0,
                         controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
                         padding: EdgeInsets.only(

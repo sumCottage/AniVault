@@ -337,7 +337,7 @@ class _CalendarViewState extends State<CalendarView> {
               }
 
               return GridView.builder(
-                scrollCacheExtent: const ScrollCacheExtent.pixels(400.0),
+                cacheExtent: 400.0,
                 padding: const EdgeInsets.only(bottom: 100),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,

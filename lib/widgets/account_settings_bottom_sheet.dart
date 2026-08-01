@@ -7,6 +7,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ainme_vault/theme/app_theme.dart';
 import 'package:ainme_vault/services/anilist_service.dart';
+import 'package:ainme_vault/services/anilist_auth_service.dart';
+import 'package:ainme_vault/services/anilist_import_service.dart';
+import 'package:app_links/app_links.dart';
+import 'dart:async';
 
 class AccountSettingsBottomSheet extends StatefulWidget {
   const AccountSettingsBottomSheet({super.key});
@@ -20,18 +24,89 @@ class _AccountSettingsBottomSheetState
     extends State<AccountSettingsBottomSheet> {
   bool _showAdultContent = false;
   bool _isLoading = true;
+  bool _isImporting = false;
+  String _importStatus = '';
+  StreamSubscription<Uri>? _appLinksSubscription;
+  Map<String, String>? _aniListProfile;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _initDeepLinkListener();
+  }
+
+  @override
+  void dispose() {
+    _appLinksSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _initDeepLinkListener() {
+    final appLinks = AppLinks();
+    _appLinksSubscription = appLinks.uriLinkStream.listen((uri) async {
+      if (uri.scheme == 'aniflux' && uri.host == 'anilist-auth') {
+        // The authorization code comes as a query parameter: aniflux://anilist-auth?code=...
+        final code = uri.queryParameters['code'];
+
+        if (code != null) {
+          try {
+            await AniListAuthService.exchangeCodeForToken(code);
+            await AniListAuthService.fetchAndSaveUserProfile();
+            final profile = await AniListAuthService.getUserProfile();
+            if (mounted) {
+              setState(() {
+                _aniListProfile = profile;
+              });
+            }
+            _startImport();
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Auth error: $e')),
+              );
+            }
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _startImport() async {
+    if (!mounted) return;
+    setState(() {
+      _isImporting = true;
+      _importStatus = 'Fetching watchlist...';
+    });
+
+    try {
+      final importedCount = await AniListImportService.importToFirestore();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Successfully imported $importedCount anime entries!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Import failed: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+          _importStatus = '';
+        });
+      }
+    }
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final profile = await AniListAuthService.getUserProfile();
     if (mounted) {
       setState(() {
         _showAdultContent = prefs.getBool('show_adult_content') ?? false;
+        _aniListProfile = profile;
         _isLoading = false;
       });
     }
@@ -113,8 +188,10 @@ class _AccountSettingsBottomSheetState
             const SizedBox(height: 16),
 
             // Main Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -146,58 +223,56 @@ class _AccountSettingsBottomSheetState
 
                           _sectionLabel("Integrations"),
                           const SizedBox(height: 10),
-                          _actionTile(
-                            icon: Icons.link,
-                            title: "Login with AniList",
-                            subtitle: "Sync your anime list",
-                            iconColor: const Color(0xFF02A9FF),
-                            onTap: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.rocket_launch_rounded,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        "AniList integration coming soon!",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  backgroundColor: AppTheme.primary,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 16,
-                                  ),
-                                  elevation: 8,
-                                  duration: const Duration(seconds: 2),
+                          if (_aniListProfile != null) ...[
+                            _aniListProfileTile(),
+                            const SizedBox(height: 10),
+                            _actionTile(
+                              icon: Icons.cloud_download_rounded,
+                              title: "Import Watchlist",
+                              subtitle: "Fetch latest entries from AniList",
+                              iconColor: const Color(0xFF02A9FF),
+                              onTap: _startImport,
+                            ),
+                          ] else ...[
+                            _actionTile(
+                              icon: Icons.link,
+                              title: "Login with AniList",
+                              subtitle: "Sync your anime list",
+                              iconColor: const Color(0xFF02A9FF),
+                              onTap: () {
+                                AniListAuthService.login();
+                              },
+                            ),
+                          ],
+                          if (_isImporting) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppTheme.primary.withValues(alpha: 0.3),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      _importStatus,
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
 
                           const SizedBox(height: 24),
 
@@ -219,6 +294,8 @@ class _AccountSettingsBottomSheetState
                         ],
                       ),
               ),
+                ),
+              ),
             ),
 
             const SizedBox(height: 20),
@@ -229,6 +306,52 @@ class _AccountSettingsBottomSheetState
   }
 
   // ------------------ Helpers ------------------
+
+Widget _aniListProfileTile() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: NetworkImage(_aniListProfile!['avatar'] ?? ''),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Connected to AniList",
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                Text(
+                  _aniListProfile!['username'] ?? 'User',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: () async {
+              await AniListAuthService.logout();
+              if (mounted) {
+                setState(() {
+                  _aniListProfile = null;
+                });
+              }
+            },
+          )
+        ],
+      ),
+    );
+  }
 
   Widget _sectionLabel(String label) {
     return Text(
