@@ -60,6 +60,7 @@ dependencies:
   in_app_review: ^2.0.9
   app_links: ^7.0.0
   flutter_secure_storage: ^10.3.1
+  flutter_dotenv: ^6.0.1
 
 flutter_launcher_icons:
   android: true
@@ -95,6 +96,7 @@ flutter:
     - assets/icon/
     - assets/licenses/
     - shorebird.yaml
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
