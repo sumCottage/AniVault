@@ -65,9 +65,7 @@ class AniListImportService {
     }
 
     final HttpLink httpLink = HttpLink('https://graphql.anilist.co');
-    final AuthLink authLink = AuthLink(
-      getToken: () async => 'Bearer $token',
-    );
+    final AuthLink authLink = AuthLink(getToken: () async => 'Bearer $token');
     final Link link = authLink.concat(httpLink);
 
     return GraphQLClient(
@@ -88,7 +86,9 @@ class AniListImportService {
     );
 
     if (viewerResult.hasException) {
-      throw Exception('Failed to fetch Viewer ID: ${viewerResult.exception.toString()}');
+      throw Exception(
+        'Failed to fetch Viewer ID: ${viewerResult.exception.toString()}',
+      );
     }
 
     final userId = viewerResult.data?['Viewer']?['id'];
@@ -106,7 +106,9 @@ class AniListImportService {
     );
 
     if (listResult.hasException) {
-      throw Exception('Failed to fetch MediaListCollection: ${listResult.exception.toString()}');
+      throw Exception(
+        'Failed to fetch MediaListCollection: ${listResult.exception.toString()}',
+      );
     }
 
     return listResult.data ?? {};
@@ -125,7 +127,7 @@ class AniListImportService {
 
     int totalImported = 0;
     final batch = FirebaseFirestore.instance.batch();
-    
+
     // Process in batches if necessary, but Firestore batch supports up to 500 writes
     // For simplicity, we loop through and commit every 500 entries
     int batchCount = 0;
@@ -146,14 +148,17 @@ class AniListImportService {
             .collection('anime')
             .doc(animeId);
 
-        final title = media['title']['english'] ?? media['title']['romaji'] ?? 'Unknown';
+        final title =
+            media['title']['english'] ?? media['title']['romaji'] ?? 'Unknown';
         final coverImage = media['coverImage']['large'] ?? '';
         final status = _mapAniListStatus(entry['status']);
         final progress = entry['progress'] ?? 0;
         final totalEpisodes = media['episodes'] ?? 0;
-        
+
         final format = media['format'];
-        final episodeDuration = (format == 'MOVIE') ? (media['duration'] ?? 90) : (media['duration'] ?? 24);
+        final episodeDuration = (format == 'MOVIE')
+            ? (media['duration'] ?? 90)
+            : (media['duration'] ?? 24);
         final watchMinutes = progress * episodeDuration;
 
         final docData = {
@@ -182,7 +187,9 @@ class AniListImportService {
             startedAt['day'] ?? 1,
           );
         } else if (entry['createdAt'] != null) {
-          startDate = DateTime.fromMillisecondsSinceEpoch(entry['createdAt'] * 1000);
+          startDate = DateTime.fromMillisecondsSinceEpoch(
+            entry['createdAt'] * 1000,
+          );
         }
 
         DateTime? finishDate;
