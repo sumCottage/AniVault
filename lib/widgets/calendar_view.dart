@@ -172,8 +172,8 @@ class _CalendarViewState extends State<CalendarView> {
                         color: isSelected
                             ? _primaryColor
                             : Theme.of(context).brightness == Brightness.dark
-                                ? const Color(0xFF2C2C3A)
-                                : const Color(0xFFE8E5F0),
+                            ? const Color(0xFF2C2C3A)
+                            : const Color(0xFFE8E5F0),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: isSelected
                             ? [
@@ -194,7 +194,8 @@ class _CalendarViewState extends State<CalendarView> {
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white.withValues(alpha: 0.9)
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.45),
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
@@ -220,7 +221,8 @@ class _CalendarViewState extends State<CalendarView> {
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
-                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    : Theme.of(context).colorScheme.onSurface
+                                          .withValues(alpha: 0.7),
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -259,26 +261,30 @@ class _CalendarViewState extends State<CalendarView> {
           padding: const EdgeInsets.only(left: 4, bottom: 12, top: 4),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-              return Stack(
-                alignment: Alignment.centerLeft,
-                children: <Widget>[
-                  ...previousChildren,
-                  ?currentChild,
-                ],
-              );
-            },
+            layoutBuilder:
+                (Widget? currentChild, List<Widget> previousChildren) {
+                  return Stack(
+                    alignment: Alignment.centerLeft,
+                    children: <Widget>[...previousChildren, ?currentChild],
+                  );
+                },
             transitionBuilder: (child, animation) {
               return FadeTransition(
                 opacity: animation,
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.1), // Slide from bottom instead of right
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  )),
+                  position:
+                      Tween<Offset>(
+                        begin: const Offset(
+                          0.0,
+                          0.1,
+                        ), // Slide from bottom instead of right
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
                   child: child,
                 ),
               );
@@ -320,7 +326,9 @@ class _CalendarViewState extends State<CalendarView> {
                       Icon(
                         Icons.event_busy_rounded,
                         size: 48,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.25),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.25),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -328,7 +336,9 @@ class _CalendarViewState extends State<CalendarView> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.45),
                         ),
                       ),
                     ],
@@ -419,20 +429,27 @@ class _CalendarViewState extends State<CalendarView> {
                       memCacheHeight: 360,
                       maxWidthDiskCache: 300,
                       maxHeightDiskCache: 450,
-                      placeholder: (context, url) =>
-                          Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          ),
+                      placeholder: (context, url) => Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
                       errorWidget: (context, url, error) => Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         child: Icon(
                           Icons.broken_image,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.3),
                         ),
                       ),
                     )
                   : Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                     ),
             ),
 
