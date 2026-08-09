@@ -333,26 +333,35 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                                         LightSkeleton(
                                           width: 210,
                                           height: 300,
-                                          borderRadius:
-                                              BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                     errorWidget: (context, url, error) =>
                                         Container(
-                                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
                                           child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
                                               Icon(
                                                 Icons.broken_image_rounded,
-                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withValues(alpha: 0.3),
                                                 size: 40,
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
                                                 "No Image",
                                                 style: TextStyle(
-                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.4),
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w500,
                                                 ),
@@ -362,7 +371,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                                         ),
                                   )
                                 : Container(
-                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                     width: 210,
                                     height: 300,
                                     child: const Icon(
@@ -593,7 +604,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
@@ -606,7 +619,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                   child: Icon(
                     Icons.copy_rounded,
                     size: 18,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
               ],
@@ -672,7 +687,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
           value,
           style: TextStyle(
             fontSize: 13,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -783,7 +800,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1071,10 +1090,7 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                   layoutBuilder: (currentChild, previousChildren) {
                     return Stack(
                       alignment: Alignment.topCenter,
-                      children: <Widget>[
-                        ...previousChildren,
-                        ?currentChild,
-                      ],
+                      children: <Widget>[...previousChildren, ?currentChild],
                     );
                   },
                   transitionBuilder:
@@ -1127,7 +1143,11 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? AppTheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: isSelected
+                      ? AppTheme.primary
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
                 child: Text(label, textAlign: TextAlign.center),
               ),
@@ -1192,7 +1212,12 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
             Text(
               "Something went wrong while fetching data.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -1278,7 +1303,11 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
           _buildDetailRow("Source", source, Icons.local_offer_rounded),
 
           const SizedBox(height: 10),
-           Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
+          Divider(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.15),
+          ),
           const SizedBox(height: 10),
 
           // Studio
@@ -1295,7 +1324,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                 "Studio",
                 style: TextStyle(
                   fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1305,12 +1336,12 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
           Padding(
             padding: const EdgeInsets.only(left: 26),
             child: Text(
-               studioName,
-               style: TextStyle(
-                 fontSize: 15,
-                 fontWeight: FontWeight.bold,
-                 color: Theme.of(context).colorScheme.onSurface,
-               ),
+              studioName,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
 
@@ -1325,14 +1356,16 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                   color: AppTheme.primary.withValues(alpha: 0.75),
                 ),
                 const SizedBox(width: 8),
-                 Text(
-                   "Trailer",
-                   style: TextStyle(
-                     fontSize: 14,
-                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                     fontWeight: FontWeight.w500,
-                   ),
-                 ),
+                Text(
+                  "Trailer",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
 
@@ -1378,10 +1411,14 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                             errorWidget: (context, url, error) => Container(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                               child: Icon(
                                 Icons.broken_image,
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.3),
                               ),
                             ),
                             fadeInDuration: const Duration(milliseconds: 150),
@@ -1422,7 +1459,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
             label,
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1540,10 +1579,14 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                             borderRadius: BorderRadius.circular(60),
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             child: Icon(
                               Icons.person,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.3),
                             ),
                           ),
                           fadeInDuration: const Duration(milliseconds: 150),
@@ -1568,7 +1611,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1661,12 +1706,16 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                             width: 110,
                             height: 155,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               Icons.image,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.3),
                             ),
                           ),
                     const SizedBox(height: 6),
@@ -1767,12 +1816,17 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                                   width: 120,
                                   height: 170,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(
                                     Icons.image,
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.3),
                                   ),
                                 ),
                           const SizedBox(height: 6),
@@ -1847,7 +1901,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                     height: 1.5,
                   ),
                 ),
@@ -1855,7 +1911,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                   description,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                     height: 1.5,
                   ),
                 ),
@@ -2025,6 +2083,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                           anime['title']?['romaji'],
                       'nextEpisode': anime['nextAiringEpisode']['episode'],
                       'airingAt': anime['nextAiringEpisode']['airingAt'],
+                      'coverImage':
+                          anime['coverImage']?['large'] ??
+                          anime['coverImage']?['medium'],
                       'createdAt': FieldValue.serverTimestamp(),
                     });
                   }
@@ -2067,7 +2128,9 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
                     key: ValueKey(isSubscribed),
                     color: isSubscribed
                         ? AppTheme.primary
-                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.4),
                     size: 24,
                   ),
                 ),
@@ -2123,7 +2186,9 @@ class FadeInImageWidget extends StatelessWidget {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Icon(
               Icons.broken_image,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
           ),
           fadeInDuration: const Duration(milliseconds: 250),

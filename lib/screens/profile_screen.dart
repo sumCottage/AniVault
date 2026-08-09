@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ainme_vault/widgets/avatar_picker_bottom_sheet.dart';
 import 'package:ainme_vault/widgets/edit_profile_bottom_sheet.dart';
 import 'package:ainme_vault/widgets/account_settings_bottom_sheet.dart';
+import 'package:ainme_vault/widgets/notifications_bottom_sheet.dart';
 import 'package:ainme_vault/screens/about_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart'; // import to access MainScreen
@@ -109,7 +110,9 @@ class ProfileScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                   height: 1.5,
                 ),
               ),
@@ -219,12 +222,12 @@ class ProfileScreen extends StatelessWidget {
                         backgroundColor: Colors.grey[200],
                         backgroundImage: selectedAvatar != null
                             ? (selectedAvatar.startsWith('http')
-                                ? CachedNetworkImageProvider(selectedAvatar)
-                                : AssetImage(selectedAvatar) as ImageProvider)
+                                  ? CachedNetworkImageProvider(selectedAvatar)
+                                  : AssetImage(selectedAvatar) as ImageProvider)
                             : (user.photoURL != null
-                                ? CachedNetworkImageProvider(user.photoURL!)
-                                : const AssetImage("assets/avatar.png")
-                                    as ImageProvider),
+                                  ? CachedNetworkImageProvider(user.photoURL!)
+                                  : const AssetImage("assets/avatar.png")
+                                        as ImageProvider),
                       ),
                     );
                   },
@@ -314,8 +317,16 @@ class ProfileScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildStatItem(context, watchTime["value"]!, watchTime["label"]!),
-                      _buildStatItem(context, completedCount.toString(), "Completed"),
+                      _buildStatItem(
+                        context,
+                        watchTime["value"]!,
+                        watchTime["label"]!,
+                      ),
+                      _buildStatItem(
+                        context,
+                        completedCount.toString(),
+                        "Completed",
+                      ),
                       _buildStatItem(context, totalAnimes.toString(), "Anime"),
                     ],
                   ),
@@ -345,6 +356,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
               child: Column(
+                spacing: 20,
                 children: [
                   _buildSettingsTile(
                     Icons.edit,
@@ -352,31 +364,32 @@ class ProfileScreen extends StatelessWidget {
                     context,
                     false,
                   ),
-                  const SizedBox(height: 20),
                   _buildSettingsTile(
                     Icons.palette,
                     "Customize Avatar",
                     context,
                     false,
                   ),
-                  const SizedBox(height: 20),
                   // Theme toggle — simple switch
                   _buildThemeToggle(context),
-                  const SizedBox(height: 20),
+                  _buildSettingsTile(
+                    Icons.notifications_active_outlined,
+                    "Manage Notifications",
+                    context,
+                    false,
+                  ),
                   _buildSettingsTile(
                     Icons.settings,
                     "Account Settings",
                     context,
                     false,
                   ),
-                  const SizedBox(height: 20),
                   _buildSettingsTile(
                     Icons.info_outline,
                     "About",
                     context,
                     false,
                   ),
-                  const SizedBox(height: 20),
                   _buildSettingsTile(Icons.logout, "Logout", context, true),
                 ],
               ),
@@ -407,7 +420,12 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
       ],
     );
@@ -464,7 +482,9 @@ class ProfileScreen extends StatelessWidget {
                     activeTrackColor: AppTheme.primary.withValues(alpha: 0.3),
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: Colors.grey.shade300,
-                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                    trackOutlineColor: WidgetStateProperty.all(
+                      Colors.transparent,
+                    ),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
@@ -531,7 +551,9 @@ class ProfileScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                         height: 1.5,
                       ),
                     ),
@@ -547,7 +569,11 @@ class ProfileScreen extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(50),
                               ),
-                              side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.25)),
+                              side: BorderSide(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.25),
+                              ),
                             ),
                             child: Text(
                               'Cancel',
@@ -736,6 +762,14 @@ class ProfileScreen extends StatelessWidget {
             backgroundColor: Colors.transparent,
             builder: (_) => const AccountSettingsBottomSheet(),
           );
+        } else if (title == "Manage Notifications") {
+          // Show manage notifications bottom sheet
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const NotificationsBottomSheet(),
+          );
         }
       },
       child: Container(
@@ -772,7 +806,9 @@ class ProfileScreen extends StatelessWidget {
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
           ],
         ),
