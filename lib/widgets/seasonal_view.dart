@@ -90,7 +90,9 @@ class _SeasonalViewState extends State<SeasonalView> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -169,7 +171,8 @@ class _SeasonalViewState extends State<SeasonalView> {
                                     : FontWeight.normal,
                                 color: isSelected
                                     ? const Color(0xFF714FDC)
-                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                                    : Theme.of(context).colorScheme.onSurface
+                                          .withValues(alpha: 0.4),
                               ),
                             ),
                           );
@@ -251,7 +254,8 @@ class _SeasonalViewState extends State<SeasonalView> {
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF714FDC)
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15),
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.15),
                             ),
                           ),
                           child: Text(
@@ -259,7 +263,8 @@ class _SeasonalViewState extends State<SeasonalView> {
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  : Theme.of(context).colorScheme.onSurface
+                                        .withValues(alpha: 0.7),
                               fontWeight: FontWeight.w600,
                               fontSize: 13, // Slightly smaller text
                             ),
@@ -359,7 +364,7 @@ class _SeasonalViewState extends State<SeasonalView> {
               }
 
               return GridView.builder(
-                cacheExtent: 400.0,
+                scrollCacheExtent: const ScrollCacheExtent.pixels(400.0),
                 padding: const EdgeInsets.only(bottom: 100),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
@@ -434,20 +439,27 @@ class _SeasonalViewState extends State<SeasonalView> {
                       memCacheHeight: 360,
                       maxWidthDiskCache: 300,
                       maxHeightDiskCache: 450,
-                      placeholder: (context, url) =>
-                          Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          ),
+                      placeholder: (context, url) => Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
                       errorWidget: (context, url, error) => Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         child: Icon(
                           Icons.broken_image,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.3),
                         ),
                       ),
                     )
                   : Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                     ),
             ),
 

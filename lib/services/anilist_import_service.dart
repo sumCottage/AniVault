@@ -1,7 +1,6 @@
 import 'package:ainme_vault/services/anilist_auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class AniListImportService {
@@ -126,7 +125,6 @@ class AniListImportService {
     if (lists == null || lists.isEmpty) return 0;
 
     int totalImported = 0;
-    final batch = FirebaseFirestore.instance.batch();
 
     // Process in batches if necessary, but Firestore batch supports up to 500 writes
     // For simplicity, we loop through and commit every 500 entries
