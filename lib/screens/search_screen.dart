@@ -1052,7 +1052,10 @@ class AnimeListCard extends StatelessWidget {
         anime['coverImage']?['medium'] ?? anime['coverImage']?['large'];
     final title =
         anime['title']?['romaji'] ?? anime['title']?['english'] ?? 'Unknown';
-    final score = anime['averageScore']?.toString() ?? 'N/A';
+    final rawScore = anime['averageScore'];
+    final score = rawScore != null
+        ? ((rawScore as num) / 10).toStringAsFixed(1)
+        : 'N/A';
     final year = anime['startDate']?['year']?.toString() ?? '—';
     final episodes = anime['episodes']?.toString() ?? "N/A";
 
@@ -1147,7 +1150,7 @@ class AnimeListCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            "$score%",
+                            score,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,

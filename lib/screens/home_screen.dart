@@ -1217,6 +1217,56 @@ class _MyAnimeListState extends State<MyAnimeList> {
                         ),
                       ),
 
+                      // Rating badge for Completed anime
+                      if (data['status'] == 'Completed' &&
+                          data['userScore'] != null &&
+                          (data['userScore'] as num) > 0) ...[
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.star_rounded,
+                                  color: Color(0xFF02A9FF),
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  ((data['userScore'] as num) > 10
+                                          ? (data['userScore'] as num) / 10.0
+                                          : (data['userScore'] as num).toDouble())
+                                      .toStringAsFixed(
+                                        ((data['userScore'] as num) > 10
+                                                    ? (data['userScore'] as num) / 10.0
+                                                    : (data['userScore'] as num).toDouble()) %
+                                                1 ==
+                                            0
+                                        ? 0
+                                        : 1,
+                                      ),
+                                  style: const TextStyle(
+                                    color: Color(0xFF02A9FF),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+
                       // Title text inside card
                       Positioned(
                         left: 8,
@@ -1257,6 +1307,16 @@ class _MyAnimeListState extends State<MyAnimeList> {
           itemBuilder: (context, index) {
             final doc = sortedList[index];
             final data = doc.data() as Map<String, dynamic>;
+
+            final rawUserScore = data['userScore'];
+            String? formattedUserScore;
+            if (rawUserScore != null && (rawUserScore as num) > 0) {
+              final numScore = rawUserScore.toDouble();
+              final normalized = numScore > 10 ? numScore / 10.0 : numScore;
+              formattedUserScore = (normalized % 1 == 0)
+                  ? normalized.toInt().toString()
+                  : normalized.toStringAsFixed(1);
+            }
 
             final title = data['title'] ?? 'Unknown';
 
@@ -1376,13 +1436,48 @@ class _MyAnimeListState extends State<MyAnimeList> {
 
                                 const SizedBox(height: 8),
 
-                                // EPISODE TEXT
-                                Text(
-                                  "Ep: $progress / $totalEpisodes",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade600,
-                                  ),
+                                // EPISODE TEXT & COMPLETED RATING
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Ep: $progress / $totalEpisodes",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    if (data['status'] == 'Completed' &&
+                                        formattedUserScore != null) ...[
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "•",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.star_rounded,
+                                            color: Color(0xFF02A9FF),
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            formattedUserScore,
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
                                 ),
 
                                 // PROGRESS BAR
@@ -1397,9 +1492,9 @@ class _MyAnimeListState extends State<MyAnimeList> {
                                       minHeight: 3,
                                       backgroundColor:
                                           Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? Colors.grey.shade800
-                                          : Colors.grey.shade200,
+                                                  Brightness.dark
+                                              ? Colors.grey.shade800
+                                              : Colors.grey.shade200,
                                       valueColor: AlwaysStoppedAnimation(
                                         AppTheme.primary,
                                       ),

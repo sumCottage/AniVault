@@ -698,7 +698,10 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
   }
 
   Widget buildStatsCard(Map<String, dynamic> anime) {
-    final score = anime['averageScore']?.toString() ?? "N/A";
+    final rawScore = anime['averageScore'];
+    final score = rawScore != null
+        ? ((rawScore as num) / 10).toStringAsFixed(1)
+        : "N/A";
     final popularity = anime['popularity'] != null
         ? _formatNumber(anime['popularity'])
         : "N/A";
@@ -748,7 +751,7 @@ class _AnimeDetailScreenState extends State<AnimeDetailScreen>
             _buildStatItem(
               Icons.star_rounded,
               Colors.amber,
-              "$score%",
+              score,
               "Score",
             ),
             _buildStatItem(

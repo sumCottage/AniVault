@@ -1,6 +1,8 @@
+import 'package:ainme_vault/services/anilist_auth_service.dart';
 import 'package:ainme_vault/services/anilist_service.dart';
 import 'package:ainme_vault/services/review_service.dart';
 import 'package:ainme_vault/theme/app_theme.dart';
+import 'package:ainme_vault/widgets/anilist_rating_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +24,8 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
   DateTime? _startDate;
   DateTime? _finishDate;
   int _totalEpisodes = 0;
+  double? _userScore; // User rating on AniList (1.0 - 10.0)
+  bool _isAniListConnected = false;
   bool _hasChanges = false;
   late bool _isNewEntry;
   bool get _episodesUnknown => widget.anime['episodes'] == null;
@@ -43,7 +47,38 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
     _isNewEntry = true;
     _episodeScrollController = ScrollController();
     _loadEpisodes();
-    _checkForExistingEntry();
+    _loadEntryAndConnection();
+  }
+
+  Future<void> _loadEntryAndConnection() async {
+    await _checkForExistingEntry();
+    await _checkAniListConnection();
+  }
+
+  Future<void> _checkAniListConnection() async {
+    final token = await AniListAuthService.getToken();
+    if (mounted) {
+      setState(() {
+        _isAniListConnected = token != null && token.isNotEmpty;
+      });
+
+      // Only check AniList for prefilling if this is a brand new entry not yet in Firestore
+      if (_isAniListConnected && _isNewEntry && _userScore == null) {
+        try {
+          final anilistEntry = await AniListService.fetchUserMediaListEntry(widget.anime['id']);
+          if (anilistEntry != null && mounted && _isNewEntry && _userScore == null) {
+            final score = anilistEntry['score'];
+            if (score != null && (score as num) > 0) {
+              final rawScore = score.toDouble();
+              final normalized = rawScore > 10 ? rawScore / 10.0 : rawScore;
+              setState(() {
+                _userScore = normalized.roundToDouble();
+              });
+            }
+          }
+        } catch (_) {}
+      }
+    }
   }
 
   @override
@@ -87,7 +122,11 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
           _isNewEntry = false;
           _status = data['status'] ?? "Planning";
           _progress = data['progress'] ?? 0;
-          // Don't restore score - we only show anime's rating now
+          if (data['userScore'] != null) {
+            final rawScore = (data['userScore'] as num).toDouble();
+            final normalized = rawScore > 10 ? rawScore / 10.0 : rawScore;
+            _userScore = normalized.roundToDouble();
+          }
 
           if (data['startDate'] != null) {
             _startDate = (data['startDate'] as Timestamp).toDate();
@@ -229,6 +268,7 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
         'totalEpisodes': _totalEpisodes,
         'averageScore':
             widget.anime['averageScore'], // Store anime's actual rating
+        'userScore': _userScore, // User's personal rating on AniList
         'lastUpdated': FieldValue.serverTimestamp(),
         'format': format, // TV, MOVIE, ONA
         'seasonYear': widget.anime['seasonYear'], // 2019
@@ -252,6 +292,21 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
           .collection('anime')
           .doc(animeId)
           .set(data, SetOptions(merge: true));
+
+      // 🔥 Sync entry and rating to AniList in background if connected
+      if (_isAniListConnected) {
+        AniListService.saveMediaListEntry(
+          mediaId: widget.anime['id'],
+          status: _status,
+          score: _userScore,
+          progress: _progress,
+          startedAt: _startDate,
+          completedAt: _finishDate,
+        ).catchError((e) {
+          debugPrint('AniList sync error: $e');
+          return null;
+        });
+      }
 
       // Trigger Review Request Logic
       if (_isNewEntry) {
@@ -667,6 +722,28 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                       fontStyle: FontStyle.italic,
                     ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 4b. Your AniList Rating Section
+                  AniListRatingSection(
+                    userScore: _userScore,
+                    isAniListConnected: _isAniListConnected,
+                    onRatingChanged: (newScore) {
+                      setState(() {
+                        _userScore = newScore;
+                        _hasChanges = true;
+                      });
+                    },
+                    onAniListConnected: () async {
+                      final token = await AniListAuthService.getToken();
+                      if (mounted) {
+                        setState(() {
+                          _isAniListConnected = token != null && token.isNotEmpty;
+                        });
+                      }
+                    },
                   ),
 
                   const SizedBox(height: 20),
