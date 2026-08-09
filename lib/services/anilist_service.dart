@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:ainme_vault/services/anilist_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AniListService {
@@ -654,6 +657,145 @@ class AniListService {
     } catch (e, st) {
       debugPrint('AniList fetch failed: $e\n$st');
       return [];
+    }
+  }
+
+  /// Save or update an anime list entry on AniList (including score, status, progress, dates)
+  static Future<Map<String, dynamic>?> saveMediaListEntry({
+    required int mediaId,
+    String? status,
+    double? score,
+    int? progress,
+    DateTime? startedAt,
+    DateTime? completedAt,
+  }) async {
+    final token = await AniListAuthService.getToken();
+    if (token == null || token.isEmpty) return null;
+
+    final Map<String, dynamic> variables = {
+      'mediaId': mediaId,
+    };
+
+    if (status != null) {
+      variables['status'] = _mapStatusToAniList(status);
+    }
+    // Set score if > 0, or 0 to reset/remove rating on AniList
+    variables['score'] = (score != null && score > 0) ? score : 0;
+
+    if (progress != null) {
+      variables['progress'] = progress;
+    }
+    if (startedAt != null) {
+      variables['startedAt'] = {
+        'year': startedAt.year,
+        'month': startedAt.month,
+        'day': startedAt.day,
+      };
+    }
+    if (completedAt != null) {
+      variables['completedAt'] = {
+        'year': completedAt.year,
+        'month': completedAt.month,
+        'day': completedAt.day,
+      };
+    }
+
+    const String mutation = r'''
+      mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
+        SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, startedAt: $startedAt, completedAt: $completedAt) {
+          id
+          mediaId
+          status
+          score
+          progress
+        }
+      }
+    ''';
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://graphql.anilist.co'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'query': mutation,
+          'variables': variables,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data']?['SaveMediaListEntry'];
+      } else {
+        debugPrint('AniList save entry error: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('AniList save entry exception: $e');
+      return null;
+    }
+  }
+
+  /// Fetch the authenticated user's media list entry for a specific media ID
+  static Future<Map<String, dynamic>?> fetchUserMediaListEntry(int mediaId) async {
+    final token = await AniListAuthService.getToken();
+    if (token == null || token.isEmpty) return null;
+
+    const String query = r'''
+      query ($mediaId: Int) {
+        Media (id: $mediaId) {
+          mediaListEntry {
+            id
+            status
+            score(format: POINT_10_DECIMAL)
+            progress
+          }
+        }
+      }
+    ''';
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://graphql.anilist.co'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'query': query,
+          'variables': {'mediaId': mediaId},
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data']?['Media']?['mediaListEntry'];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('AniList fetch entry exception: $e');
+      return null;
+    }
+  }
+
+  static String _mapStatusToAniList(String status) {
+    switch (status.toLowerCase()) {
+      case 'watching':
+        return 'CURRENT';
+      case 'completed':
+        return 'COMPLETED';
+      case 'planning':
+        return 'PLANNING';
+      case 'dropped':
+        return 'DROPPED';
+      case 'paused':
+        return 'PAUSED';
+      default:
+        return 'PLANNING';
     }
   }
 }
