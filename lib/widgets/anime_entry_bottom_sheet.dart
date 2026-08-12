@@ -501,14 +501,14 @@ class _AnimeEntryBottomSheetState extends State<AnimeEntryBottomSheet> {
                                 color: isLocked
                                     ? Theme.of(context).colorScheme.surfaceContainerHighest
                                     : isSelected
-                                        ? AppTheme.primary
+                                        ? AppTheme.getStatusColor(status)
                                         : Theme.of(context).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.transparent),
                                 boxShadow: isSelected && !isLocked
                                     ? [
                                         BoxShadow(
-                                          color: AppTheme.primary.withValues(
+                                          color: AppTheme.getStatusColor(status).withValues(
                                             alpha: 0.3,
                                           ),
                                           blurRadius: 8,

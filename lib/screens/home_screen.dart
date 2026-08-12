@@ -1496,7 +1496,7 @@ class _MyAnimeListState extends State<MyAnimeList> {
                                               ? Colors.grey.shade800
                                               : Colors.grey.shade200,
                                       valueColor: AlwaysStoppedAnimation(
-                                        AppTheme.primary,
+                                        AppTheme.getStatusColor(data['status'] ?? widget.status),
                                       ),
                                     ),
                                   ),
@@ -1541,7 +1541,7 @@ class _MyAnimeListState extends State<MyAnimeList> {
                                         data['releaseStatus'] ==
                                             'NOT_YET_RELEASED'
                                         ? Colors.grey.shade400
-                                        : AppTheme.primary,
+                                        : AppTheme.getStatusColor(data['status'] ?? widget.status),
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
                                       _onAddEpisode(
@@ -1942,7 +1942,7 @@ class _StatusChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primary
+              ? AppTheme.getStatusColor(label)
               : Theme.of(context).brightness == Brightness.dark
               ? Colors.grey.shade800
               : Colors.grey.shade300,

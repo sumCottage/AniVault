@@ -6,6 +6,24 @@ class AppTheme {
   static const Color accent = Color(0xFF9F6DFF);
   static const Color green = Color(0xFF00B818);
 
+  // ──────────── STATUS COLORS ────────────
+  static const Color watchingColor = Color(0xFF714FDC); // Purple
+  static const Color planningColor = Color(0xFFF59E0B); // Amber / Yellow
+  static const Color completedColor = Color(0xFF10B981); // Green
+
+  static Color getStatusColor(String status) {
+    switch (status) {
+      case 'Planning':
+        return planningColor;
+      case 'Watching':
+        return watchingColor;
+      case 'Completed':
+        return completedColor;
+      default:
+        return primary;
+    }
+  }
+
   // ──────────── LIGHT THEME ────────────
   static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
