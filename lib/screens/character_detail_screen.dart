@@ -615,7 +615,9 @@ class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
                       SizedBox(
                         height: 200,
                         child: ListView.separated(
-                          cacheExtent: 300.0,
+                          scrollCacheExtent: const ScrollCacheExtent.pixels(
+                            300.0,
+                          ),
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           addRepaintBoundaries: true,

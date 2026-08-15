@@ -364,7 +364,7 @@ class _SeasonalViewState extends State<SeasonalView> {
               }
 
               return GridView.builder(
-                cacheExtent: 400.0,
+                scrollCacheExtent: const ScrollCacheExtent.pixels(400.0),
                 padding: const EdgeInsets.only(bottom: 100),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,

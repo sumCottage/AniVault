@@ -958,7 +958,9 @@ class SearchScreenState extends State<SearchScreen> {
                     : animeList.isEmpty && selectedFilter == "Search"
                     ? _buildNoResultsWidget()
                     : ListView.builder(
-                        cacheExtent: 500.0,
+                        scrollCacheExtent: const ScrollCacheExtent.pixels(
+                          500.0,
+                        ),
                         controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
                         padding: EdgeInsets.only(
@@ -993,7 +995,8 @@ class SearchScreenState extends State<SearchScreen> {
                               isInList: _userAnimeIds.contains(
                                 anime['id'].toString(),
                               ),
-                              userStatus: _userAnimeStatusMap[anime['id'].toString()],
+                              userStatus:
+                                  _userAnimeStatusMap[anime['id'].toString()],
                               onTap: () {
                                 FocusManager.instance.primaryFocus?.unfocus();
                                 _searchFocus.unfocus();
