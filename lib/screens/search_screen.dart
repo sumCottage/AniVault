@@ -1,6 +1,6 @@
 //import 'package:ainme_vault/main.dart';
 //import 'package:ainme_vault/utils/transitions.dart';
-//import 'package:ainme_vault/theme/app_theme.dart';
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -68,22 +68,11 @@ class SearchScreenState extends State<SearchScreen> {
 
   List<String> searchHistory = [];
   Set<String> _userAnimeIds = {};
+  Map<String, String> _userAnimeStatusMap = {};
   StreamSubscription? _userListSubscription;
 
-  // ====== STALE REQUEST CANCELLATION ======
-  // Session IDs to cancel pending API requests when user types quickly
-  // or switches filters rapidly. Each new request increments the session ID,
-  // and when a response returns, it checks if it's still the active session.
-  // If not, the response is discarded to prevent stale data from overwriting
-  // newer results.
   int _searchSessionId = 0;
   int _categorySessionId = 0;
-
-  // ====== CENTRALIZED RETRY LOGIC ======
-  // Stores the last API call function so retry logic is in ONE place.
-  // Before: Retry logic was duplicated in _retryLastAction AND _buildErrorWidget
-  // After: Both just call _retryLastAction(), which uses this stored function.
-  // Benefits: No code duplication, no logic drift, easy to maintain.
   Future<List> Function()? _lastApiCall;
 
   @override
@@ -109,6 +98,7 @@ class SearchScreenState extends State<SearchScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _userAnimeIds = {};
+      _userAnimeStatusMap = {};
       return;
     }
     _userListSubscription = FirebaseFirestore.instance
@@ -118,8 +108,20 @@ class SearchScreenState extends State<SearchScreen> {
         .snapshots()
         .listen((snapshot) {
           if (mounted) {
+            final Map<String, String> statusMap = {};
+            final Set<String> ids = {};
+            for (var doc in snapshot.docs) {
+              ids.add(doc.id);
+              final data = doc.data();
+              final String idStr = (data['id'] ?? doc.id).toString();
+              ids.add(idStr);
+              final String status = data['status'] ?? 'Planning';
+              statusMap[idStr] = status;
+              statusMap[doc.id] = status;
+            }
             setState(() {
-              _userAnimeIds = snapshot.docs.map((doc) => doc.id).toSet();
+              _userAnimeIds = ids;
+              _userAnimeStatusMap = statusMap;
             });
           }
         });
@@ -993,6 +995,8 @@ class SearchScreenState extends State<SearchScreen> {
                               isInList: _userAnimeIds.contains(
                                 anime['id'].toString(),
                               ),
+                              userStatus:
+                                  _userAnimeStatusMap[anime['id'].toString()],
                               onTap: () {
                                 FocusManager.instance.primaryFocus?.unfocus();
                                 _searchFocus.unfocus();
@@ -1036,6 +1040,7 @@ class AnimeListCard extends StatelessWidget {
   final dynamic anime;
   final int? rank;
   final bool isInList;
+  final String? userStatus;
   final VoidCallback onTap;
 
   const AnimeListCard({
@@ -1043,6 +1048,7 @@ class AnimeListCard extends StatelessWidget {
     required this.anime,
     this.rank,
     this.isInList = false,
+    this.userStatus,
     required this.onTap,
   });
 
@@ -1206,7 +1212,7 @@ class AnimeListCard extends StatelessWidget {
               right: 12,
               child: Icon(
                 Icons.bookmark_rounded,
-                color: const Color(0xFF714FDC).withValues(alpha: 0.25),
+                color: AppTheme.getStatusColor(userStatus ?? 'Watching'),
                 size: 24,
               ),
             ),
